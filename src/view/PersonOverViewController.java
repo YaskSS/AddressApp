@@ -1,76 +1,174 @@
 package view;
+
+import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.util.Callback;
 import model.Person;
+import util.DateUtil;
 import address.MainApp;
 
 public class PersonOverViewController {
+
+	@FXML
+	private TableView<Person> personTable;
+	@FXML
+	private TableColumn<Person, String> firstNameColumn;
+	@FXML
+	private TableColumn<Person, String> lastNameColumn;
+
+	@FXML
+	private Label firstNameLabel;
+	@FXML
+	private Label lastNameLabel;
+	@FXML
+	private Label streetLabel;
+	@FXML
+	private Label postalCodeLabel;
+	@FXML
+	private Label cityLabel;
+	@FXML
+	private Label birthdayLabel;
+
+	// Ссылка на главное приложение.
+	private MainApp mainApp = new MainApp();
+
+	/*
+	 * Конструктор. Конструктор вызывается раньше метода initialize().
+	 */
+	public PersonOverViewController() {
+	}
+
+	/*
+	 * Инициализация класса-контроллера. Этот метод вызывается автоматически
+	 * после того, как fxml-файл будет загружен.
+	 */
+
+	@FXML
+	public void initialize() {
+		// Инициализация таблицы адресатов с двумя столбцами.
+		firstNameColumn.setCellValueFactory(cellData -> cellData.getValue().firstNameProperty());
+		// lastNameColumn.setCellValueFactory(cellData ->
+		// cellData.getValue().lastNameProperty());
+		lastNameColumn.setCellValueFactory(
+				new Callback<TableColumn.CellDataFeatures<Person, String>, ObservableValue<String>>() {
+
+					@Override
+					public ObservableValue<String> call(CellDataFeatures<Person, String> param) {
+						// TODO Auto-generated method stub
+						return param.getValue().lastNameProperty();
+					}
+				});
+		// Очистка дополнительной информации об адресате.
+		showPersonDetails(null);
+
+		// Слушаем изменения выбора, и при изменении отображаем
+		// дополнительную информацию об адресате.
+		personTable.getSelectionModel().selectedItemProperty()
+				.addListener((observable, oldValue, newValue) -> showPersonDetails(newValue));
+	}
+
+	/*
+	 * Вызывается главным приложением, которое даёт на себя ссылку.
+	 * 
+	 * @param mainApp
+	 */
+	public void setMainApp(MainApp mainApp) {
+		this.mainApp = mainApp;
+
+		// Добавление в таблицу данных из наблюдаемого списка
+		personTable.setItems(mainApp.getPersonData());
+	}
+
+	/**
+	 * Заполняет все текстовые поля, отображая подробности об адресате. Если
+	 * указанный адресат = null, то все текстовые поля очищаются.
+	 * 
+	 * @param person
+	 *            — адресат типа Person или null
+	 */
+	private void showPersonDetails(Person person) {
+		if (person != null) {
+			// Заполняем метки информацией из объекта person.
+			firstNameLabel.setText(person.getFirstName());
+			lastNameLabel.setText(person.getLastName());
+			streetLabel.setText(person.getStreet());
+			postalCodeLabel.setText(Integer.toString(person.getPostalCode()));
+			cityLabel.setText(person.getCity());
+			birthdayLabel.setText(DateUtil.format(person.getBirthday()));
+
+		} else {
+			// Если Person = null, то убираем весь текст.
+			firstNameLabel.setText("");
+			lastNameLabel.setText("");
+			streetLabel.setText("");
+			postalCodeLabel.setText("");
+			cityLabel.setText("");
+			birthdayLabel.setText("");
+		}
+	}
+
+	/*
+	 * Вызывается, когда пользователь кликает по кнопке удаления.
+	 */
+	@FXML
+	private void handleDeletePerson() {
+		int selectedIndex = personTable.getSelectionModel().getSelectedIndex();
+		if (selectedIndex >= 0) {
+			personTable.getItems().remove(selectedIndex);
+		} else {
+			Alert alert = new Alert(AlertType.WARNING);
+			alert.initOwner(mainApp.getPrimaryStage());
+			alert.setTitle("No Selection");
+			alert.setHeaderText("No Person Selected");
+			alert.setContentText("Please select a person in the table.");
+
+			alert.showAndWait();
+		}
+	}
 	
-    @FXML
-    private TableView<Person> personTable;
-    @FXML
-    private TableColumn<Person, String> firstNameColumn;
-    @FXML
-    private TableColumn<Person, String> lastNameColumn;
+	/*
+	 * Вызывается, когда пользователь кликает по кнопке New...
+	 * Открывает диалоговое окно с дополнительной информацией нового адресата.
+	 */
+	@FXML
+	private void handleNewPerson() {
+	    Person tempPerson = new Person();
+	    boolean okClicked = mainApp.showPersonEditDialog(tempPerson);
+	    if (okClicked) {
+	        mainApp.getPersonData().add(tempPerson);
+	    }
+	}
 
-    @FXML
-    private Label firstNameLabel;
-    @FXML
-    private Label lastNameLabel;
-    @FXML
-    private Label streetLabel;
-    @FXML
-    private Label postalCodeLabel;
-    @FXML
-    private Label cityLabel;
-    @FXML
-    private Label birthdayLabel;
+	/*
+	 * Вызывается, когда пользователь кликает по кнопка Edit...
+	 * Открывает диалоговое окно для изменения выбранного адресата.
+	 */
+	@FXML
+	private void handleEditPerson() {
+	    Person selectedPerson = personTable.getSelectionModel().getSelectedItem();
+	    if (selectedPerson != null) {
+	        boolean okClicked = mainApp.showPersonEditDialog(selectedPerson);
+	        if (okClicked) {
+	            showPersonDetails(selectedPerson);
+	        }
 
-    // Ссылка на главное приложение.
-    private MainApp mainApp = new MainApp();
+	    } else {
+	        // Ничего не выбрано.
+	        Alert alert = new Alert(AlertType.WARNING);
+	        alert.initOwner(mainApp.getPrimaryStage());
+	        alert.setTitle("No Selection");
+	        alert.setHeaderText("No Person Selected");
+	        alert.setContentText("Please select a person in the table.");
 
-    /*
-     * Конструктор.
-     * Конструктор вызывается раньше метода initialize().
-     */
-    public PersonOverViewController() {
-    }
-
-    /*
-     * Инициализация класса-контроллера. Этот метод вызывается автоматически
-     * после того, как fxml-файл будет загружен.
-     */
-    
-    @FXML
-    public void initialize() {
-        // Инициализация таблицы адресатов с двумя столбцами.
-        firstNameColumn.setCellValueFactory(cellData -> cellData.getValue().firstNameProperty());
-       // lastNameColumn.setCellValueFactory(cellData -> cellData.getValue().lastNameProperty());
-        lastNameColumn.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Person,String>, ObservableValue<String>>() {
-			
-			@Override
-			public ObservableValue<String> call(CellDataFeatures<Person, String> param) {
-				// TODO Auto-generated method stub
-				return param.getValue().lastNameProperty();
-			}
-		});
-    }
-
-    /*
-     * Вызывается главным приложением, которое даёт на себя ссылку.
-     * 
-     * @param mainApp
-     */
-    public void setMainApp(MainApp mainApp) {
-        this.mainApp = mainApp;
-
-        // Добавление в таблицу данных из наблюдаемого списка
-        personTable.setItems(mainApp.getPersonData());
-    }
-
+	        alert.showAndWait();
+	    }
+	}
 }
