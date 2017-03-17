@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="300.0" prefWidth="500.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="view.PersonEditDialogController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="320.0" prefWidth="500.0" styleClass="background" stylesheets="@DarkTheme.css" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="view.PersonEditDialogController">
    <children>
       <GridPane layoutX="14.0" layoutY="14.0" AnchorPane.bottomAnchor="60.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="15.0">
         <columnConstraints>
@@ -66,12 +66,12 @@
       </GridPane>
       <HBox layoutX="371.0" layoutY="361.0" AnchorPane.bottomAnchor="15.0" AnchorPane.rightAnchor="5.0">
          <children>
-            <Button mnemonicParsing="false" onAction="#handleOk" prefWidth="70.0" text="OK">
+            <Button defaultButton="true" mnemonicParsing="false" onAction="#handleOk" prefWidth="110.0" text="OK">
                <HBox.margin>
                   <Insets right="5.0" />
                </HBox.margin>
             </Button>
-            <Button mnemonicParsing="false" onAction="#handleCancel" prefWidth="70.0" text="Cancel" />
+            <Button mnemonicParsing="false" onAction="#handleCancel" prefWidth="110.0" text="Cancel" />
          </children>
       </HBox>
    </children>
