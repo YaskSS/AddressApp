@@ -23,6 +23,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import model.Person;
 import model.PersonListWrapper;
+import view.BirthdayStatisticsController;
 import view.PersonEditDialogController;
 import view.PersonOverViewController;
 import view.RootLayoutController;
@@ -276,6 +277,37 @@ public class MainApp extends Application {
 	        alert.setContentText("Could not save data to file:\n" + file.getPath());
 
 	        alert.showAndWait();
+	    }
+	}
+	
+	/*
+	 * Открывает диалоговое окно для вывода статистики дней рождений.
+	 */
+	public void showBirthdayStatistics() {
+        System.out.println("паша еблан");
+
+	    try {
+	        // Загружает fxml-файл и создаёт новую сцену для всплывающего окна.
+	    	
+	        FXMLLoader loader = new FXMLLoader();
+	        loader.setLocation(MainApp.class.getResource("/view/BirthdayStatistics.fxml"));
+	        AnchorPane page = (AnchorPane) loader.load();
+	        Stage dialogStage = new Stage();
+	        dialogStage.setTitle("Birthday Statistics");
+	        dialogStage.initModality(Modality.WINDOW_MODAL);
+	        dialogStage.initOwner(primaryStage);
+	        Scene scene = new Scene(page);
+	        dialogStage.setScene(scene);
+
+	        // Передаёт адресатов в контроллер.
+	        BirthdayStatisticsController controller = loader.getController();
+	        controller.setPersonData(personData);
+
+	        dialogStage.show();
+
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	        System.out.println(e.toString());
 	    }
 	}
 }
