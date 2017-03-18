@@ -1,20 +1,31 @@
 package address;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.prefs.Preferences;
+
+import javax.swing.JOptionPane;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
 
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import model.Person;
+import model.PersonListWrapper;
 import view.PersonEditDialogController;
 import view.PersonOverViewController;
+import view.RootLayoutController;
 
 public class MainApp extends Application {
 
@@ -48,7 +59,8 @@ public class MainApp extends Application {
 	}
 
 	/*
-	 * Инициализирует корневой макет.
+	 * Инициализирует корневой макет и пытается загрузить последний открытый
+	 * файл с адресатами.
 	 */
 	public void initRootLayout() {
 		try {
@@ -60,10 +72,21 @@ public class MainApp extends Application {
 			// Отображаем сцену, содержащую корневой макет.
 			Scene scene = new Scene(rootLayout);
 			primaryStage.setScene(scene);
+			
+			 // Даём контроллеру доступ к главному прилодению.
+	        RootLayoutController controller = loader.getController();
+	        controller.setMainApp(this);
+	        
 			primaryStage.show();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		 // Пытается загрузить последний открытый файл с адресатами.
+	    File file = getPersonFilePath();
+	    if (file != null) {
+	        loadPersonDataFromFile(file);
+	    }
 	}
 
 	/*
@@ -144,8 +167,115 @@ public class MainApp extends Application {
 	public ObservableList<Person> getPersonData() {
 		return personData;
 	}
+	
+	/*
+	 * Возвращает preference файла адресатов, то есть, последний открытый файл.
+	 * Этот preference считывается из реестра, специфичного для конкретной
+	 * операционной системы. Если preference не был найден, то возвращается null.
+	 * 
+	 * @return
+	 */
+	public File getPersonFilePath() {
+	    Preferences prefs = Preferences.userNodeForPackage(MainApp.class);
+	    String filePath = prefs.get("filePath", null);
+	    if (filePath != null) {
+	        return new File(filePath);
+	    } else {
+	        return null;
+	    }
+	}
+
+	/*
+	 * Задаёт путь k текущему загруженному файлу. Этот путь сохраняется
+	 * в реестре, специфичном для конкретной операционной системы.
+	 * 
+	 * @param file - файл или null, чтобы удалить путь
+	 */
+	public void setPersonFilePath(File file) {
+	    Preferences prefs = Preferences.userNodeForPackage(MainApp.class);
+	    if (file != null) {
+	        prefs.put("filePath", file.getPath());
+
+	        // Обновление заглавия сцены.
+	        primaryStage.setTitle("AddressApp - " + file.getName());
+	    } else {
+	        prefs.remove("filePath");
+
+	        // Обновление заглавия сцены.
+	        primaryStage.setTitle("AddressApp");
+	    }
+	}
 
 	public static void main(String[] args) {
 		launch(args);
+	}
+	
+	/*
+	 * Загружает информацию об адресатах из указанного файла.
+	 * Текущая информация об адресатах будет заменена.
+	 * 
+	 * @param file
+	 */
+	public void loadPersonDataFromFile(File file) {
+		if (file == null) {
+			return;
+		}
+	    try {
+	        JAXBContext context = JAXBContext
+	                .newInstance(PersonListWrapper.class);
+	        Unmarshaller um = context.createUnmarshaller();
+
+	        // Чтение XML из файла и демаршализация.
+	        PersonListWrapper wrapper = (PersonListWrapper) um.unmarshal(file);
+
+	        personData.clear();
+	        personData.addAll(wrapper.getPersons());
+
+	        // Сохраняем путь к файлу в реестре.
+	        setPersonFilePath(file);
+
+	    } catch (Exception e) { // catches ANY exception
+	    	System.out.println(e.toString());
+	    	
+	        Alert alert = new Alert(AlertType.ERROR);
+	        alert.setTitle("Error");
+	        alert.setHeaderText("Could not load data");
+	        alert.setContentText("Could not load data from file:\n" + file.getPath());
+
+	        alert.showAndWait();
+	    }
+	}
+
+	/*
+	 * Сохраняет текущую информацию об адресатах в указанном файле.
+	 * 
+	 * @param file
+	 */
+	public void savePersonDataToFile(File file) {
+	    try {
+	        JAXBContext context = JAXBContext
+	                .newInstance(PersonListWrapper.class);
+	        Marshaller m = context.createMarshaller();
+	        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+
+	        // Обёртываем наши данные об адресатах.
+	        PersonListWrapper wrapper = new PersonListWrapper();
+	        wrapper.setPersons(personData);
+
+	        // Маршаллируем и сохраняем XML в файл.
+	        m.marshal(wrapper, file);
+
+	        // Сохраняем путь к файлу в реестре.
+	        setPersonFilePath(file);
+	    } catch (Exception e) { // catches ANY exception
+	    	System.out.println(e.toString());
+
+	        Alert alert = new Alert(AlertType.ERROR);
+	        alert.setTitle("Error");
+	        alert.setHeaderText("Could not save data");
+	        alert.setContentText("Could not save data to file:\n" + file.getPath());
+
+	        alert.showAndWait();
+	    }
 	}
 }
